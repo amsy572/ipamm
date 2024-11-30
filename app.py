@@ -21,8 +21,10 @@ os.makedirs(model_dir, exist_ok=True)
 # List of expected model files and their raw URLs
 model_files = [
     ("config.json", f"{model_repo_url}/config.json"),
-    ("pytorch_model.bin", f"{model_repo_url}/pytorch_model.bin"),
+    ("model.safetensors", f"{model_repo_url}/model.safetensors"),
     ("tokenizer_config.json", f"{model_repo_url}/tokenizer_config.json"),
+    ("special_tokens_map.json", f"{model_repo_url}/special_tokens_map.json"),
+    ("training_args.bin", f"{model_repo_url}/training_args.bin"),
     ("vocab.txt", f"{model_repo_url}/vocab.txt")
 ]
 
