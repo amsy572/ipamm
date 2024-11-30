@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 app = Flask(__name__)
 
 # Define the GitHub raw URL for the model files
-model_url = "https://github.com/amsy572/ipamm/raw/main/fine_tuned_hajj_qa_model"
+model_url = "https://raw.githubusercontent.com/amsy572/ipamm/main/fine_tuned_hajj_qa_model"
 model_dir = "/tmp/fine_tuned_hajj_qa_model"  # Path to save downloaded model files
 
 # Ensure the model directory exists
@@ -20,15 +20,18 @@ model_files = [
     ("vocab.txt", f"{model_url}/vocab.txt")
 ]
 
-# Download the model files from GitHub
+# Download the model files with debugging
 for file_name, file_url in model_files:
     response = requests.get(file_url)
     if response.status_code == 200:
         with open(os.path.join(model_dir, file_name), 'wb') as f:
             f.write(response.content)
+        print(f"Downloaded {file_name} successfully.")
     else:
-        print(f"Failed to download {file_name} from {file_url}")
+        print(f"Failed to download {file_name} from {file_url}. Status code: {response.status_code}")
+        print(response.text)  # Print the response content for more insight
         exit(1)  # Exit if any model file fails to download
+  # Exit if any model file fails to download
 
 # Load the tokenizer and model with error handling
 try:
