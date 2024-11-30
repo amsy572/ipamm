@@ -6,18 +6,22 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 app = Flask(__name__)
 
 # Define the GitHub raw URL for the model files
-model_url = "https://github.com/amsy572/ipamm/raw/main/path/to/fine_tuned_hajj_qa_model"
+model_url = "https://github.com/amsy572/ipamm/raw/main/fine_tuned_hajj_qa_model"
 model_dir = "/tmp/fine_tuned_hajj_qa_model"  # Path to save downloaded model files
 
 # Ensure the model directory exists
 os.makedirs(model_dir, exist_ok=True)
 
-# List of expected model files
-model_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.txt"]  # Add other necessary files if needed
+# List of expected model files and their raw URLs
+model_files = [
+    ("config.json", f"{model_url}/config.json"),
+    ("pytorch_model.bin", f"{model_url}/pytorch_model.bin"),
+    ("tokenizer_config.json", f"{model_url}/tokenizer_config.json"),
+    ("vocab.txt", f"{model_url}/vocab.txt")
+]
 
 # Download the model files from GitHub
-for file_name in model_files:
-    file_url = f"{model_url}/{file_name}"
+for file_name, file_url in model_files:
     response = requests.get(file_url)
     if response.status_code == 200:
         with open(os.path.join(model_dir, file_name), 'wb') as f:
@@ -59,4 +63,4 @@ def get_answer():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only
