@@ -5,10 +5,40 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 
 app = Flask(__name__)
 
-# Define the GitHub raw URL for the model files
-model_path = "fine_tuned_hajj_qa_model/"  # Replace with your actual path
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForQuestionAnswering.from_pretrained(model_path) 
+# GitHub repository URL for the model files
+model_repo_url = "https://github.com/amsy572/ipamm/raw/main/fine_tuned_hajj_qa_model"
+model_dir = "/tmp/fine_tuned_hajj_qa_model"  # Path to save downloaded model files
+
+# Ensure the model directory exists
+os.makedirs(model_dir, exist_ok=True)
+
+# List of expected model files and their raw URLs
+model_files = [
+    ("config.json", f"{model_repo_url}/config.json"),
+    ("pytorch_model.bin", f"{model_repo_url}/pytorch_model.bin"),
+    ("tokenizer_config.json", f"{model_repo_url}/tokenizer_config.json"),
+    ("vocab.txt", f"{model_repo_url}/vocab.txt")
+]
+
+# Download the model files
+for file_name, file_url in model_files:
+    response = requests.get(file_url)
+    if response.status_code == 200:
+        with open(os.path.join(model_dir, file_name), 'wb') as f:
+            f.write(response.content)
+        print(f"Downloaded {file_name} successfully.")
+    else:
+        print(f"Failed to download {file_name} from {file_url}. Status code: {response.status_code}")
+        print(response.text)  # Print the response content for more insight
+        exit(1)  # Exit if any model file fails to download
+
+# Load the tokenizer and model with error handling
+try:
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForQuestionAnswering.from_pretrained(model_dir)
+except Exception as e:
+    print("Error loading model or tokenizer:", e)
+    exit(1)  # Exit the application if loading fails
 
 # Initialize QA pipeline
 qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
@@ -19,8 +49,9 @@ def get_answer():
     question = data.get("question", "")
     context = "Jamarat suna da duwatsu uku a Mina waɗanda ke wakiltar Shaidan. Alhazai suna jifansu da duwatsu yayin Hajj."
 
+    # Validate input
     if not question or not context:
-        return jsonify({"error": "Both question and context are required"}), 
+        return jsonify({"error": "Both question and context are required"}), 400  # Return 400 Bad Request
 
     try:
         # Get the answer using the QA pipeline
@@ -31,7 +62,7 @@ def get_answer():
         })
     except Exception as e:
         print("Error during question answering:", e)
-        return jsonify({"error": "An error occurred while processing the request"}), 
+        return jsonify({"error": "An error occurred while processing the request"}), 500  # Return 500 Internal Server Error
 
 if __name__ == '__main__':
     # Run the Flask app
