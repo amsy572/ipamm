@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 app = Flask(__name__)
 
 # Load the fine-tuned model and tokenizer
-model_path = "/Users/user/Desktop/Ipamm/fine_tuned_hajj_qa_model"  # Replace with your actual path
+model_path = "fine_tuned_hajj_qa_model"  # Replace with your actual path
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForQuestionAnswering.from_pretrained(model_path)
 
