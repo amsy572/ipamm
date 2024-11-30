@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 app = Flask(__name__)
 
 # Define the GitHub raw URL for the model files
-model_url = "https://raw.githubusercontent.com/amsy572/ipamm/main/fine_tuned_hajj_qa_model"
+base_url = "https://raw.githubusercontent.com/amsy572/ipamm/main/fine_tuned_hajj_qa_model"
 model_dir = "/tmp/fine_tuned_hajj_qa_model"  # Path to save downloaded model files
 
 # Ensure the model directory exists
@@ -14,10 +14,10 @@ os.makedirs(model_dir, exist_ok=True)
 
 # List of expected model files and their raw URLs
 model_files = [
-    ("config.json", f"{model_url}/config.json"),
-    ("pytorch_model.bin", f"{model_url}/pytorch_model.bin"),
-    ("tokenizer_config.json", f"{model_url}/tokenizer_config.json"),
-    ("vocab.txt", f"{model_url}/vocab.txt")
+    ("config.json", f"{base_url}/config.json"),
+    ("pytorch_model.bin", f"{base_url}/pytorch_model.bin"),
+    ("tokenizer_config.json", f"{base_url}/tokenizer_config.json"),
+    ("vocab.txt", f"{base_url}/vocab.txt")
 ]
 
 # Download the model files with debugging
@@ -31,7 +31,6 @@ for file_name, file_url in model_files:
         print(f"Failed to download {file_name} from {file_url}. Status code: {response.status_code}")
         print(response.text)  # Print the response content for more insight
         exit(1)  # Exit if any model file fails to download
-  # Exit if any model file fails to download
 
 # Load the tokenizer and model with error handling
 try:
@@ -66,4 +65,4 @@ def get_answer():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only
+    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only.
