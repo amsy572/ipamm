@@ -1,16 +1,35 @@
+import os
+import requests
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
-import os
 
 app = Flask(__name__)
 
-# Define the model path (adjust this to the correct path in your deployment)
-model_path = os.getenv("MODEL_PATH", "fine_tuned_hajj_qa_model")  # Use environment variable or default
+# Define the GitHub raw URL for the model files
+model_url = "https://github.com/amsy572/ipamm/raw/main/path/to/fine_tuned_hajj_qa_model"
+model_dir = "/tmp/fine_tuned_hajj_qa_model"  # Path to save downloaded model files
+
+# Ensure the model directory exists
+os.makedirs(model_dir, exist_ok=True)
+
+# List of expected model files
+model_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.txt"]  # Add other necessary files if needed
+
+# Download the model files from GitHub
+for file_name in model_files:
+    file_url = f"{model_url}/{file_name}"
+    response = requests.get(file_url)
+    if response.status_code == 200:
+        with open(os.path.join(model_dir, file_name), 'wb') as f:
+            f.write(response.content)
+    else:
+        print(f"Failed to download {file_name} from {file_url}")
+        exit(1)  # Exit if any model file fails to download
 
 # Load the tokenizer and model with error handling
 try:
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForQuestionAnswering.from_pretrained(model_dir)
 except Exception as e:
     print("Error loading model or tokenizer:", e)
     exit(1)  # Exit the application if loading fails
@@ -40,4 +59,4 @@ def get_answer():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only
+    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only.
