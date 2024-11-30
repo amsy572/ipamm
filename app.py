@@ -1,7 +1,13 @@
 import os
 import requests
+import logging
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
+from time import sleep
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -20,24 +26,33 @@ model_files = [
     ("vocab.txt", f"{model_repo_url}/vocab.txt")
 ]
 
-# Download the model files
+# Download the model files with retry logic
 for file_name, file_url in model_files:
-    response = requests.get(file_url)
-    if response.status_code == 200:
-        with open(os.path.join(model_dir, file_name), 'wb') as f:
-            f.write(response.content)
-        print(f"Downloaded {file_name} successfully.")
-    else:
-        print(f"Failed to download {file_name} from {file_url}. Status code: {response.status_code}")
-        print(response.text)  # Print the response content for more insight
+    success = False
+    for attempt in range(3):  # Retry up to 3 times
+        response = requests.get(file_url)
+        if response.status_code == 200:
+            with open(os.path.join(model_dir, file_name), 'wb') as f:
+                f.write(response.content)
+            logger.info(f"Downloaded {file_name} successfully.")
+            success = True
+            break
+        else:
+            logger.error(f"Failed to download {file_name} from {file_url}. Status code: {response.status_code}")
+            logger.debug(response.text)
+            sleep(2)  # Wait before retrying
+    
+    if not success:
+        logger.error(f"Failed to download {file_name} after 3 attempts.")
         exit(1)  # Exit if any model file fails to download
 
 # Load the tokenizer and model with error handling
 try:
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForQuestionAnswering.from_pretrained(model_dir)
+    logger.info("Model and tokenizer loaded successfully.")
 except Exception as e:
-    print("Error loading model or tokenizer:", e)
+    logger.error("Error loading model or tokenizer:", exc_info=True)
     exit(1)  # Exit the application if loading fails
 
 # Initialize QA pipeline
@@ -61,7 +76,7 @@ def get_answer():
             "score": result['score']
         })
     except Exception as e:
-        print("Error during question answering:", e)
+        logger.error("Error during question answering:", exc_info=True)
         return jsonify({"error": "An error occurred while processing the request"}), 500  # Return 500 Internal Server Error
 
 if __name__ == '__main__':
