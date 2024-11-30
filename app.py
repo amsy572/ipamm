@@ -1,11 +1,9 @@
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
-import os
-
 app = Flask(__name__)
 
 # Load the fine-tuned model and tokenizer
-model_path = os.getenv("MODEL_PATH", "fine_tuned_hajj_qa_model")  # Use environment variable or default
+model_path = "fine_tuned_hajj_qa_model" # Use environment variable or default
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForQuestionAnswering.from_pretrained(model_path)
 
