@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
+import os
 
 app = Flask(__name__)
 
 # Load the fine-tuned model and tokenizer
-model_path = "fine_tuned_hajj_qa_model"  # Replace with your actual path
+model_path = os.getenv("MODEL_PATH", "fine_tuned_hajj_qa_model")  # Use environment variable or default
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForQuestionAnswering.from_pretrained(model_path)
 
@@ -15,7 +16,7 @@ qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 def get_answer():
     data = request.json
     question = data.get("question", "")
-    context =  "Jamarat suna da duwatsu uku a Mina waɗanda ke wakiltar Shaidan. Alhazai suna jifansu da duwatsu yayin Hajj."
+    context = "Jamarat suna da duwatsu uku a Mina waɗanda ke wakiltar Shaidan. Alhazai suna jifansu da duwatsu yayin Hajj."
     
     if not question or not context:
         return jsonify({"error": "Both question and context are required"}), 400
@@ -23,13 +24,9 @@ def get_answer():
     # Get the answer using the QA pipeline
     result = qa_pipeline(question=question, context=context)
     return jsonify({
-        # "question": question,
-        # "context": context,
         "answer": result['answer'],
-        "score": result['score'],
-        # "start_index": result['start'],
-        # "end_index": result['end']
+        "score": result['score']
     })
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0",)
+    app.run(host="0.0.0.0", port=5000)
