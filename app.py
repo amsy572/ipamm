@@ -63,7 +63,7 @@ except Exception as e:
 qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 
 # Load all contexts from the JSON file
-context_file_path = "/tmp/fine_tuned_hajj_qa_model/context.json"  # Path to your context JSON file
+context_file_path = os.path.join(model_dir, "context.json")  # Path to your context JSON file
 try:
     with open(context_file_path, 'r', encoding='utf-8') as f:
         contexts = json.load(f)  # Load all contexts as a list
@@ -76,24 +76,29 @@ except FileNotFoundError:
 def get_answer():
     data = request.json
     question = data.get("question", "")
-    context_index = data.get("context_index", 0)  # Optionally pass which context to use
+    context_indices = data.get("context_indices", [])  # List of indices to use
 
     # Validate input
     if not question:
         return jsonify({"error": "Question is required"}), 400  # Return 400 Bad Request
-    if context_index >= len(contexts) or context_index < 0:
-        return jsonify({"error": "Invalid context index"}), 400  # Return 400 Bad Request
 
-    # Use the specified context or combine contexts if needed
-    selected_context = contexts[context_index]['context']  # Example: use one context
-    # Or combine all contexts: selected_context = " ".join([ctx['context'] for ctx in contexts])
+    if not contexts:
+        return jsonify({"error": "No contexts available"}), 500  # Internal Server Error
+
+    if context_indices:
+        try:
+            selected_contexts = " ".join([contexts[i]['context'] for i in context_indices])
+        except IndexError:
+            return jsonify({"error": "Invalid context index"}), 400  # Return 400 Bad Request
+    else:
+        selected_contexts = " ".join([ctx['context'] for ctx in contexts])  # Combine all contexts if none provided
 
     try:
         # Get the answer using the QA pipeline
-        result = qa_pipeline(question=question, context=selected_context)
+        result = qa_pipeline(question=question, context=selected_contexts)
         return jsonify({
             "question": question,
-            "context": selected_context,
+            "context": selected_contexts,
             "answer": result['answer'],
             "score": result['score']
         })
@@ -103,4 +108,4 @@ def get_answer():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only
+    app.run(host="0.0.0.0", port=5000, debug=False)
