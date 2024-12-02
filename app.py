@@ -1,6 +1,7 @@
 import os
 import requests
 import logging
+import json
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 from time import sleep
@@ -25,7 +26,8 @@ model_files = [
     ("tokenizer_config.json", f"{model_repo_url}/tokenizer_config.json"),
     ("special_tokens_map.json", f"{model_repo_url}/special_tokens_map.json"),
     ("training_args.bin", f"{model_repo_url}/training_args.bin"),
-    ("vocab.txt", f"{model_repo_url}/vocab.txt")
+    ("vocab.txt", f"{model_repo_url}/vocab.txt"),
+    ("context.json", f"{model_repo_url}/context.json")
 ]
 
 # Download the model files with retry logic
@@ -60,20 +62,38 @@ except Exception as e:
 # Initialize QA pipeline
 qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 
+# Load all contexts from the JSON file
+context_file_path = "/tmp/fine_tuned_hajj_qa_model/context.json"  # Path to your context JSON file
+try:
+    with open(context_file_path, 'r', encoding='utf-8') as f:
+        contexts = json.load(f)  # Load all contexts as a list
+    logger.info("Loaded contexts successfully.")
+except FileNotFoundError:
+    logger.error(f"Context file {context_file_path} not found.")
+    contexts = []
+
 @app.route('/answer', methods=['POST'])
 def get_answer():
     data = request.json
     question = data.get("question", "")
-    context = "On the Day of Tarwiyah, pilgrims enter Ihram, pray at Mina, and prepare for the Day of Arafat."
+    context_index = data.get("context_index", 0)  # Optionally pass which context to use
 
     # Validate input
-    if not question or not context:
-        return jsonify({"error": "Both question and context are required"}), 400  # Return 400 Bad Request
+    if not question:
+        return jsonify({"error": "Question is required"}), 400  # Return 400 Bad Request
+    if context_index >= len(contexts) or context_index < 0:
+        return jsonify({"error": "Invalid context index"}), 400  # Return 400 Bad Request
+
+    # Use the specified context or combine contexts if needed
+    selected_context = contexts[context_index]['context']  # Example: use one context
+    # Or combine all contexts: selected_context = " ".join([ctx['context'] for ctx in contexts])
 
     try:
         # Get the answer using the QA pipeline
-        result = qa_pipeline(question=question, context=context)
+        result = qa_pipeline(question=question, context=selected_context)
         return jsonify({
+            "question": question,
+            "context": selected_context,
             "answer": result['answer'],
             "score": result['score']
         })
@@ -83,4 +103,4 @@ def get_answer():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only.
+    app.run(host="0.0.0.0", port=5000, debug=True)  # Use debug=True for local development only
