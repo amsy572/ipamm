@@ -64,7 +64,7 @@ qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 def get_answer():
     data = request.json
     question = data.get("question", "")
-    context = "الذبيحة في الحج هي التضحية بحيوان (غالبًا خروف أو ماعز) كجزء من الشعائر، خصوصًا في حج التمتع والقران."
+    context = "On the Day of Tarwiyah, pilgrims enter Ihram, pray at Mina, and prepare for the Day of Arafat."
 
     # Validate input
     if not question or not context:
